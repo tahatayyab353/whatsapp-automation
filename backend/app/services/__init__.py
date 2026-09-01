@@ -5,6 +5,15 @@ from app.services.conversation_service import conversation_service
 from app.services.message_service import message_service
 from app.services.knowledge_service import knowledge_service
 from app.services.appointment_service import appointment_service
+from app.services.whatsapp_service import whatsapp_service
+from app.services.whatsapp_webhook_service import (
+    WhatsAppWebhookService,
+    whatsapp_webhook_service,
+)
+from app.services.whatsapp_ai_service import (
+    WhatsAppAIService,
+    whatsapp_ai_service,
+)
 
 __all__ = [
     "clinic_service",
@@ -14,4 +23,9 @@ __all__ = [
     "message_service",
     "knowledge_service",
     "appointment_service",
+    "whatsapp_service",
+    "WhatsAppWebhookService",
+    "whatsapp_webhook_service",
+    "WhatsAppAIService",
+    "whatsapp_ai_service",
 ]

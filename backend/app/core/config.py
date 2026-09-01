@@ -73,7 +73,8 @@ class Settings(BaseSettings):
     MAX_KNOWLEDGE_CHARS: int = 12000
     RECENT_MESSAGE_LIMIT: int = 20
 
-    # Meta / WhatsApp Cloud API Configuration (CHUNK 6+ placeholder)
+    # Meta / WhatsApp Cloud API Configuration (CHUNK 6)
+    WHATSAPP_API_VERSION: str = "v20.0"
     WHATSAPP_ACCESS_TOKEN: Optional[str] = None
     WHATSAPP_PHONE_NUMBER_ID: Optional[str] = None
     WHATSAPP_VERIFY_TOKEN: Optional[str] = None

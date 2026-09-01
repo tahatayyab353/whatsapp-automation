@@ -28,7 +28,7 @@ from app.models import (
 def seed_database() -> None:
     session = SessionLocal()
     try:
-        print("🌱 Starting development database seeding...")
+        print("[INFO] Starting development database seeding...")
 
         # 1. Seed Demo Clinic
         clinic = session.scalar(select(Clinic).where(Clinic.slug == "demo-dental-clinic"))
@@ -45,9 +45,9 @@ def seed_database() -> None:
             )
             session.add(clinic)
             session.flush()
-            print(f"  ✓ Created Clinic: {clinic.name} ({clinic.id})")
+            print(f"  [+] Created Clinic: {clinic.name} ({clinic.id})")
         else:
-            print(f"  ℹ Clinic exists: {clinic.name}")
+            print(f"  [-] Clinic exists: {clinic.name}")
 
         # 2. Seed Users (Owner, Admin, Staff) with Development Passwords
         owner_user = session.scalar(select(User).where(User.email == "owner@demo.local"))
@@ -61,12 +61,12 @@ def seed_database() -> None:
             )
             session.add(owner_user)
             session.flush()
-            print(f"  ✓ Created Owner User: {owner_user.email} (Password: DemoOwner123!)")
+            print(f"  [+] Created Owner User: {owner_user.email} (Password: DemoOwner123!)")
         else:
             if not owner_user.password_hash:
                 owner_user.password_hash = hash_password("DemoOwner123!")
-                print(f"  ✓ Updated Owner User password: {owner_user.email}")
-            print(f"  ℹ Owner user exists: {owner_user.email}")
+                print(f"  [+] Updated Owner User password: {owner_user.email}")
+            print(f"  [-] Owner user exists: {owner_user.email}")
 
         admin_user = session.scalar(select(User).where(User.email == "admin@demo.local"))
         if not admin_user:
@@ -79,12 +79,12 @@ def seed_database() -> None:
             )
             session.add(admin_user)
             session.flush()
-            print(f"  ✓ Created Admin User: {admin_user.email} (Password: DemoAdmin123!)")
+            print(f"  [+] Created Admin User: {admin_user.email} (Password: DemoAdmin123!)")
         else:
             if not admin_user.password_hash:
                 admin_user.password_hash = hash_password("DemoAdmin123!")
-                print(f"  ✓ Updated Admin User password: {admin_user.email}")
-            print(f"  ℹ Admin user exists: {admin_user.email}")
+                print(f"  [+] Updated Admin User password: {admin_user.email}")
+            print(f"  [-] Admin user exists: {admin_user.email}")
 
         staff_user = session.scalar(select(User).where(User.email == "staff@demo.local"))
         if not staff_user:
@@ -97,12 +97,12 @@ def seed_database() -> None:
             )
             session.add(staff_user)
             session.flush()
-            print(f"  ✓ Created Staff User: {staff_user.email} (Password: DemoStaff123!)")
+            print(f"  [+] Created Staff User: {staff_user.email} (Password: DemoStaff123!)")
         else:
             if not staff_user.password_hash:
                 staff_user.password_hash = hash_password("DemoStaff123!")
-                print(f"  ✓ Updated Staff User password: {staff_user.email}")
-            print(f"  ℹ Staff user exists: {staff_user.email}")
+                print(f"  [+] Updated Staff User password: {staff_user.email}")
+            print(f"  [-] Staff user exists: {staff_user.email}")
 
         # 3. Seed Memberships
         owner_membership = session.scalar(
@@ -118,7 +118,7 @@ def seed_database() -> None:
                 role="owner",
             )
             session.add(owner_membership)
-            print(f"  ✓ Assigned Owner role for {owner_user.email}")
+            print(f"  [+] Assigned Owner role for {owner_user.email}")
 
         admin_membership = session.scalar(
             select(ClinicMembership).where(
@@ -133,7 +133,7 @@ def seed_database() -> None:
                 role="admin",
             )
             session.add(admin_membership)
-            print(f"  ✓ Assigned Admin role for {admin_user.email}")
+            print(f"  [+] Assigned Admin role for {admin_user.email}")
 
         staff_membership = session.scalar(
             select(ClinicMembership).where(
@@ -148,7 +148,7 @@ def seed_database() -> None:
                 role="staff",
             )
             session.add(staff_membership)
-            print(f"  ✓ Assigned Staff role for {staff_user.email}")
+            print(f"  [+] Assigned Staff role for {staff_user.email}")
 
         # 4. Seed WhatsApp Account
         wa_account = session.scalar(
@@ -162,11 +162,19 @@ def seed_database() -> None:
                 phone_number="+923000000000",
                 phone_number_id="100000000000001",
                 business_account_id="200000000000001",
+                display_name="Demo Dental Clinic",
+                access_token="dev_mock_access_token_123",
                 is_active=True,
             )
             session.add(wa_account)
             session.flush()
-            print(f"  ✓ Configured WhatsApp Account: {wa_account.phone_number}")
+            print(f"  [+] Configured WhatsApp Account: {wa_account.phone_number}")
+        else:
+            if not wa_account.display_name:
+                wa_account.display_name = "Demo Dental Clinic"
+            if not wa_account.access_token:
+                wa_account.access_token = "dev_mock_access_token_123"
+            print(f"  [-] WhatsApp account exists: {wa_account.phone_number}")
 
         # 5. Seed Knowledge Documents
         docs_data = [
@@ -217,7 +225,7 @@ def seed_database() -> None:
                     is_active=True,
                 )
                 session.add(new_doc)
-                print(f"  ✓ Seeded Knowledge Document: {doc['title']}")
+                print(f"  [+] Seeded Knowledge Document: {doc['title']}")
 
         # 6. Seed Lead
         lead = session.scalar(
@@ -239,9 +247,9 @@ def seed_database() -> None:
             )
             session.add(lead)
             session.flush()
-            print(f"  ✓ Seeded Lead: {lead.full_name} ({lead.phone})")
+            print(f"  [+] Seeded Lead: {lead.full_name} ({lead.phone})")
         else:
-            print(f"  ℹ Lead exists: {lead.full_name}")
+            print(f"  [-] Lead exists: {lead.full_name}")
 
         # 7. Seed Conversation & Messages
         conversation = session.scalar(
@@ -296,7 +304,7 @@ def seed_database() -> None:
                 created_at=conv_start + timedelta(minutes=5),
             )
             session.add_all([msg1, msg2, msg3])
-            print(f"  ✓ Seeded Conversation with 3 messages for {lead.full_name}")
+            print(f"  [+] Seeded Conversation with 3 messages for {lead.full_name}")
 
         # 8. Seed Appointment
         appointment = session.scalar(
@@ -316,13 +324,13 @@ def seed_database() -> None:
                 notes="Patient requested 4:00 PM slot for teeth whitening consultation.",
             )
             session.add(appointment)
-            print(f"  ✓ Seeded Appointment for {lead.full_name} at {scheduled_time.isoformat()}")
+            print(f"  [+] Seeded Appointment for {lead.full_name} at {scheduled_time.isoformat()}")
 
         session.commit()
-        print("✅ Development database seeding completed successfully!")
+        print("[SUCCESS] Development database seeding completed successfully!")
     except Exception as e:
         session.rollback()
-        print(f"❌ Error seeding database: {e}")
+        print(f"[ERROR] Error seeding database: {e}")
         raise
     finally:
         session.close()

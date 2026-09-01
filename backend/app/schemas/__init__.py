@@ -34,7 +34,25 @@ from app.schemas.knowledge import (
     KnowledgeDocumentRead,
     KnowledgeUpdate,
 )
-from app.schemas.whatsapp import WhatsAppAccountBase, WhatsAppAccountRead
+from app.schemas.whatsapp import (
+    WhatsAppAccountBase,
+    WhatsAppAccountCreate,
+    WhatsAppAccountRead,
+    WhatsAppAccountUpdate,
+)
+from app.schemas.whatsapp_message import (
+    WhatsAppContactItem,
+    WhatsAppMessageItem,
+    WhatsAppSendMessageResponse,
+)
+from app.schemas.whatsapp_webhook import (
+    WebhookChange,
+    WebhookEntry,
+    WebhookMetadata,
+    WebhookPayload,
+    WebhookStatusResponse,
+    WebhookValue,
+)
 from app.schemas.auth import (
     AuthenticatedTestResponse,
     ClinicContextTestResponse,
@@ -80,7 +98,18 @@ __all__ = [
     "KnowledgeDocumentRead",
     "KnowledgeUpdate",
     "WhatsAppAccountBase",
+    "WhatsAppAccountCreate",
     "WhatsAppAccountRead",
+    "WhatsAppAccountUpdate",
+    "WhatsAppMessageItem",
+    "WhatsAppContactItem",
+    "WhatsAppSendMessageResponse",
+    "WebhookPayload",
+    "WebhookEntry",
+    "WebhookChange",
+    "WebhookValue",
+    "WebhookMetadata",
+    "WebhookStatusResponse",
     "LoginRequest",
     "TokenResponse",
     "AuthenticatedTestResponse",

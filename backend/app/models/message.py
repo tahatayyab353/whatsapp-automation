@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, utc_now
@@ -20,6 +20,7 @@ class Message(Base):
     __table_args__ = (
         Index("ix_messages_clinic_created", "clinic_id", "created_at"),
         Index("ix_messages_conv_created", "conversation_id", "created_at"),
+        UniqueConstraint("clinic_id", "external_message_id", name="uq_messages_clinic_external_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -68,4 +69,3 @@ class Message(Base):
     # Relationships
     clinic: Mapped["Clinic"] = relationship("Clinic", back_populates="messages")
     conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="messages")
-

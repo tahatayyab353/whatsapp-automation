@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     members,
     messages,
     system,
+    whatsapp,
 )
 
 api_router = APIRouter()
@@ -45,3 +46,6 @@ api_router.include_router(appointments.router, prefix="/appointments", tags=["Ap
 
 # AI Receptionist Engine
 api_router.include_router(ai.router, prefix="/ai", tags=["AI Receptionist"])
+
+# WhatsApp Cloud API Accounts
+api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp Integration"])

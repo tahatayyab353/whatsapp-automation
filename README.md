@@ -1,7 +1,7 @@
 # AI Receptionist — WhatsApp AI Receptionist for Clinics
 
-> **Current Project Status: CHUNK 5 (AI Engine: Gemini Primary + Groq Fallback)**  
-> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, and resilient AI Receptionist Engine with Gemini primary and Groq fallback. WhatsApp webhooks and dashboard UI are scheduled for subsequent chunks.
+> **Current Project Status: CHUNK 6D (AI Receptionist + Outbound WhatsApp Messaging Pipeline Completed)**  
+> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, and automated outbound WhatsApp AI reply dispatching via Meta Graph API.
 
 ---
 
@@ -21,22 +21,38 @@ The product enables clinics to automate patient communication through WhatsApp, 
 
 ---
 
-## 2. AI Architecture & Fallback Flow
+## 2. Complete WhatsApp AI Flow
 
 ```text
-Customer Message
-      ↓
-Receptionist Service (Knowledge Lookup + History + System Rules)
-      ↓
-Primary Provider: Google Gemini API (gemini-1.5-flash)
-      │
-      ├── [SUCCESS] ───────────────────────► Returns AI Response
-      │
-      └── [RETRYABLE FAILURE] (Timeout / 429 RateLimit / 5xx Server Error)
-              ↓
-          Fallback Provider: Groq API (llama-3.3-70b-versatile)
-              ↓
-          Returns AI Response (provider="groq")
+Customer sends WhatsApp message
+            │
+            ▼
+POST /api/v1/whatsapp/webhook (HMAC-SHA256 Verified)
+            │
+            ▼
+Message Ingestion Pipeline
+            ├── Resolve WhatsAppAccount & Clinic
+            ├── Resolve/Create Lead
+            ├── Resolve/Create Conversation
+            └── Persist Customer Message & Commit
+            │
+            ▼
+AI Receptionist Orchestration
+            ├── Grounded Knowledge Retrieval
+            ├── Conversation History (Last 20 messages)
+            └── Anti-Prompt-Injection System Instructions
+            │
+            ▼
+Primary AI: Gemini 1.5 Flash (Fallback: Groq LLaMA 3.3 70B)
+            │
+            ▼
+Meta WhatsApp Cloud API (Outbound Send via Graph API v20.0)
+            │
+            ▼
+Customer receives WhatsApp response
+            │
+            ▼
+Persist AI Message (external_message_id = Meta Message ID) & Commit
 ```
 
 ---
@@ -47,7 +63,8 @@ Primary Provider: Google Gemini API (gemini-1.5-flash)
 * **Language:** Python 3.11+
 * **Framework:** FastAPI (Lifespan context manager)
 * **AI Providers:** Google Gemini API (Primary) & Groq API (Fallback)
-* **Security:** Argon2id (`argon2-cffi`), PyJWT
+* **Integrations:** Meta WhatsApp Cloud API (Graph API `v20.0`)
+* **Security:** Argon2id (`argon2-cffi`), PyJWT, HMAC-SHA256
 * **Validation & Settings:** Pydantic v2 & Pydantic Settings
 * **Database ORM:** SQLAlchemy 2.0
 * **Migrations:** Alembic
@@ -64,6 +81,15 @@ Primary Provider: Google Gemini API (gemini-1.5-flash)
 ---
 
 ## 4. API Endpoints (v1)
+
+### WhatsApp Cloud API Integration (CHUNK 6A - 6D)
+* `GET /api/v1/whatsapp/webhook` — Meta Webhook verification handshake (plain text challenge)
+* `POST /api/v1/whatsapp/webhook` — Meta Webhook event ingestion & AI response dispatch
+* `POST /api/v1/whatsapp/accounts` — Configure clinic WhatsApp account (Owner/Admin)
+* `GET /api/v1/whatsapp/accounts` — List clinic WhatsApp accounts (Owner/Admin)
+* `GET /api/v1/whatsapp/accounts/{account_id}` — View WhatsApp account details (Owner/Admin)
+* `PATCH /api/v1/whatsapp/accounts/{account_id}` — Update credentials / display name (Owner/Admin)
+* `DELETE /api/v1/whatsapp/accounts/{account_id}` — Deactivate integration preserving history (Owner/Admin)
 
 ### AI Receptionist
 * `POST /api/v1/ai/test-chat` — Execute AI receptionist completion on a conversation (persists messages)
@@ -93,21 +119,7 @@ Primary Provider: Google Gemini API (gemini-1.5-flash)
 
 ---
 
-## 5. Development Credentials & Seeding
-
-Run the idempotent database seeder:
-```bash
-python scripts/seed_dev.py
-```
-
-### Pre-seeded Development Accounts:
-* **Clinic Owner:** `owner@demo.local` / `DemoOwner123!` (Role: `owner` in Demo Dental Clinic)
-* **Clinic Admin:** `admin@demo.local` / `DemoAdmin123!` (Role: `admin` in Demo Dental Clinic)
-* **Front Desk Staff:** `staff@demo.local` / `DemoStaff123!` (Role: `staff` in Demo Dental Clinic)
-
----
-
-## 6. How to Run the Backend & Test Suite
+## 5. How to Run the Backend & Test Suite
 
 1. **Install Dependencies:**
    ```bash
@@ -115,25 +127,19 @@ python scripts/seed_dev.py
    pip install -r requirements.txt
    ```
 
-2. **Run Migrations & Seed:**
-   ```bash
-   alembic upgrade head
-   python scripts/seed_dev.py
-   ```
-
-3. **Run Test Suite:**
+2. **Run Full Test Suite:**
    ```bash
    pytest -v
    ```
 
-4. **Start Development Server:**
+3. **Start Development Server:**
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
 ---
 
-## 7. How to Run the Frontend
+## 6. How to Run the Frontend
 
 ```bash
 cd frontend
