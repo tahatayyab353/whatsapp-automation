@@ -8,6 +8,7 @@ from app.models.message import Message
 from app.models.appointment import Appointment
 from app.models.knowledge import KnowledgeDocument
 from app.models.whatsapp import WhatsAppAccount
+from app.models.handoff import Handoff
 
 __all__ = [
     "Base",
@@ -22,4 +23,5 @@ __all__ = [
     "Appointment",
     "KnowledgeDocument",
     "WhatsAppAccount",
+    "Handoff",
 ]

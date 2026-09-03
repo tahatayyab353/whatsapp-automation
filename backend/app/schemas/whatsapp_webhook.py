@@ -23,16 +23,16 @@ class WebhookContact(BaseModel):
 
 
 class WebhookText(BaseModel):
-    body: str = Field(..., description="Message text content")
+    body: Optional[str] = Field(None, description="Message text content")
 
     model_config = ConfigDict(extra="ignore")
 
 
 class WebhookIncomingMessage(BaseModel):
-    id: str = Field(..., description="Meta unique message ID (e.g. wamid.XXX)")
-    from_: str = Field(..., alias="from", description="Customer phone number")
-    timestamp: str = Field(..., description="Unix timestamp of message")
-    type: str = Field(..., description="Message type: text, image, audio, etc.")
+    id: Optional[str] = Field(None, description="Meta unique message ID (e.g. wamid.XXX)")
+    from_: Optional[str] = Field(None, alias="from", description="Customer phone number")
+    timestamp: Optional[str] = Field(None, description="Unix timestamp of message")
+    type: Optional[str] = Field(None, description="Message type: text, image, audio, etc.")
     text: Optional[WebhookText] = Field(None, description="Text object containing body if type == 'text'")
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)

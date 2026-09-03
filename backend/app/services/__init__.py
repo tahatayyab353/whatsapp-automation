@@ -14,6 +14,14 @@ from app.services.whatsapp_ai_service import (
     WhatsAppAIService,
     whatsapp_ai_service,
 )
+from app.services.lead_extraction_service import (
+    LeadExtractionService,
+    lead_extraction_service,
+)
+from app.services.handoff_service import (
+    HandoffService,
+    handoff_service,
+)
 
 __all__ = [
     "clinic_service",
@@ -28,4 +36,8 @@ __all__ = [
     "whatsapp_webhook_service",
     "WhatsAppAIService",
     "whatsapp_ai_service",
+    "LeadExtractionService",
+    "lead_extraction_service",
+    "HandoffService",
+    "handoff_service",
 ]

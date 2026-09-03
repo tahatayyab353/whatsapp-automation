@@ -15,6 +15,7 @@ from app.schemas.membership import (
     MemberRoleUpdate,
 )
 from app.schemas.lead import LeadBase, LeadCreate, LeadRead, LeadUpdate
+from app.schemas.lead_extraction import ExtractedLeadData
 from app.schemas.conversation import (
     ConversationBase,
     ConversationCreate,
@@ -53,6 +54,15 @@ from app.schemas.whatsapp_webhook import (
     WebhookStatusResponse,
     WebhookValue,
 )
+from app.schemas.handoff import (
+    HandoffAssign,
+    HandoffCreate,
+    HandoffRead,
+    HandoffReason,
+    HandoffResolve,
+    HandoffStatus,
+    StaffMessageCreate,
+)
 from app.schemas.auth import (
     AuthenticatedTestResponse,
     ClinicContextTestResponse,
@@ -82,6 +92,7 @@ __all__ = [
     "LeadCreate",
     "LeadRead",
     "LeadUpdate",
+    "ExtractedLeadData",
     "ConversationBase",
     "ConversationCreate",
     "ConversationRead",
@@ -110,6 +121,13 @@ __all__ = [
     "WebhookValue",
     "WebhookMetadata",
     "WebhookStatusResponse",
+    "HandoffCreate",
+    "HandoffAssign",
+    "HandoffResolve",
+    "HandoffRead",
+    "HandoffStatus",
+    "HandoffReason",
+    "StaffMessageCreate",
     "LoginRequest",
     "TokenResponse",
     "AuthenticatedTestResponse",

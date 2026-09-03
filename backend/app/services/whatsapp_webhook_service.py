@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.logging import logger
 from app.models import Conversation, Lead, Message
 from app.schemas.whatsapp_webhook import WebhookPayload
+from app.services.lead_extraction_service import lead_extraction_service
 from app.services.whatsapp_ai_service import whatsapp_ai_service
 from app.services.whatsapp_service import whatsapp_service
 
@@ -14,7 +16,8 @@ class WhatsAppWebhookService:
     """
     Handles incoming Meta WhatsApp Cloud API events:
     Tenant routing, message deduplication, Lead resolution/creation,
-    Conversation resolution/creation, Message persistence, and AI response orchestration.
+    Conversation resolution/creation, Message persistence, AI lead extraction,
+    and AI receptionist response orchestration.
     """
 
     @staticmethod
@@ -85,15 +88,19 @@ class WhatsAppWebhookService:
 
                 # Process each incoming message inside transaction
                 for msg in value.messages:
-                    # Only persist supported text messages for AI processing
-                    if msg.type != "text" or not msg.text or not msg.text.body:
-                        logger.info("Skipping non-text or empty WhatsApp message type: %s", msg.type)
+                    # Validate all required fields for text message processing
+                    if not msg.id or not msg.from_ or msg.type != "text" or not msg.text or not msg.text.body:
+                        logger.info("Skipping non-text, empty, or incomplete WhatsApp message.")
                         continue
 
-                    msg_id = msg.id
+                    msg_id = msg.id.strip()
                     customer_raw_phone = msg.from_
                     customer_phone = cls._normalize_phone(customer_raw_phone)
-                    text_body = msg.text.body
+                    text_body = msg.text.body.strip()
+                    if not text_body:
+                        logger.info("Skipping empty message body.")
+                        continue
+
                     msg_time = cls._parse_timestamp(msg.timestamp)
 
                     try:
@@ -180,18 +187,33 @@ class WhatsAppWebhookService:
                         db.commit()
                         logger.info("Persisted customer WhatsApp message.")
 
-                        # Queue for AI response generation after database commit
+                        # Queue for AI extraction & response generation after database commit
                         pending_ai_replies.append(
                             (clinic_id, conversation.id, text_body, customer_phone)
                         )
 
+                    except IntegrityError as int_exc:
+                        db.rollback()
+                        logger.info("Handled concurrent/duplicate message delivery via unique constraint: %s", str(int_exc))
+                        continue
                     except Exception as exc:
                         db.rollback()
                         logger.error("Error processing incoming WhatsApp message: %s", str(exc))
                         continue
 
-        # 7. Execute AI Receptionist response pipeline for ingested messages
+        # 7. Execute AI Lead Extraction & AI Receptionist response pipeline for ingested messages
         for clinic_id, conversation_id, text_body, customer_phone in pending_ai_replies:
+            # 7.1 Automatic Lead Extraction & Qualification (isolated from webhook failure)
+            try:
+                await lead_extraction_service.extract_lead_from_conversation(
+                    db=db,
+                    clinic_id=clinic_id,
+                    conversation_id=conversation_id,
+                )
+            except Exception as exc:
+                logger.error("Error in lead extraction pipeline: %s", str(exc))
+
+            # 7.2 AI Receptionist Outbound Reply
             try:
                 await whatsapp_ai_service.process_and_reply_customer_message(
                     db=db,

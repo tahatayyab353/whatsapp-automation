@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     auth,
     clinics,
     conversations,
+    handoffs,
     health,
     knowledge,
     leads,
@@ -49,3 +50,6 @@ api_router.include_router(ai.router, prefix="/ai", tags=["AI Receptionist"])
 
 # WhatsApp Cloud API Accounts
 api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp Integration"])
+
+# Human Handoffs & Escalation
+api_router.include_router(handoffs.router, prefix="/whatsapp", tags=["Human Handoffs"])

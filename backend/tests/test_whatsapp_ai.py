@@ -66,6 +66,16 @@ def client(db_session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def mock_lead_extraction():
+    with patch(
+        "app.services.lead_extraction_service.lead_extraction_service.extract_lead_from_conversation",
+        new_callable=AsyncMock,
+    ) as mock_ext:
+        mock_ext.return_value = None
+        yield mock_ext
+
+
 @pytest.fixture
 def setup_data(db_session):
     clinic_a = Clinic(name="Karachi Dental Studio", slug="karachi-dental", timezone="Asia/Karachi")

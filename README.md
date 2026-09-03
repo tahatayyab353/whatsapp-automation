@@ -1,7 +1,7 @@
 # AI Receptionist — WhatsApp AI Receptionist for Clinics
 
-> **Current Project Status: CHUNK 6D (AI Receptionist + Outbound WhatsApp Messaging Pipeline Completed)**  
-> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, and automated outbound WhatsApp AI reply dispatching via Meta Graph API.
+> **Current Project Status: CHUNK 8 (Human Handoff & Escalation System Completed)**  
+> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, outbound WhatsApp AI reply dispatching via Meta Graph API, automated structured Lead Extraction & Qualification, and Human Handoff & Escalation Queue.
 
 ---
 
@@ -13,46 +13,65 @@ The product enables clinics to automate patient communication through WhatsApp, 
 * AI-driven answers to clinic-approved FAQs
 * Service and pricing explanations
 * Clinic information (hours, location, practitioner details)
-* Patient lead capture and automated qualification
+* Patient lead capture and automated structured qualification
+* Explicit & AI-detected human handoff and staff escalation queue
+* Staff reply transmission to WhatsApp with audit logs
 * Appointment request intake and scheduling
-* Seamless escalation to human front-desk staff
-* Automated follow-ups and appointment reminders
 * Clinic staff dashboard and conversation analytics
 
 ---
 
-## 2. Complete WhatsApp AI Flow
+## 2. Complete WhatsApp AI & Human Handoff Pipeline
 
 ```text
-Customer sends WhatsApp message
-            │
-            ▼
-POST /api/v1/whatsapp/webhook (HMAC-SHA256 Verified)
-            │
-            ▼
-Message Ingestion Pipeline
-            ├── Resolve WhatsAppAccount & Clinic
-            ├── Resolve/Create Lead
-            ├── Resolve/Create Conversation
-            └── Persist Customer Message & Commit
-            │
-            ▼
-AI Receptionist Orchestration
-            ├── Grounded Knowledge Retrieval
-            ├── Conversation History (Last 20 messages)
-            └── Anti-Prompt-Injection System Instructions
-            │
-            ▼
-Primary AI: Gemini 1.5 Flash (Fallback: Groq LLaMA 3.3 70B)
-            │
-            ▼
-Meta WhatsApp Cloud API (Outbound Send via Graph API v20.0)
-            │
-            ▼
-Customer receives WhatsApp response
-            │
-            ▼
-Persist AI Message (external_message_id = Meta Message ID) & Commit
+                         CUSTOMER
+                            │
+                            ▼
+                     META WHATSAPP
+                            │
+                            ▼
+                  HMAC WEBHOOK SECURITY
+                            │
+                            ▼
+                    TENANT RESOLUTION
+                            │
+                            ▼
+                  MESSAGE PERSISTENCE
+                            │
+                            ▼
+                 CONVERSATION RESOLUTION
+                            │
+                ┌───────────┴───────────┐
+                │                       │
+          HUMAN ACTIVE?             AI ACTIVE?
+                │                       │
+               YES                     YES
+                │                       │
+                ▼                       ▼
+        ┌──────────────┐        ┌──────────────┐
+        │ WAIT FOR     │        │ AI RECEPTIONIST│
+        │ STAFF        │        └───────┬───────┘
+        └──────┬───────┘                │
+               │                ┌───────┴────────┐
+               │                │                │
+               │             NORMAL          ESCALATE
+               │                │                │
+               │                ▼                ▼
+               │           AI RESPONSE     HANDOFF CREATED
+               │                                 │
+               │                                 ▼
+               │                         ┌───────────────┐
+               │                         │ STAFF QUEUE   │
+               │                         └───────┬───────┘
+               │                                 │
+               │                              CLAIM
+               │                                 │
+               └──────────────────────┬──────────┘
+                                      ▼
+                              HUMAN CONVERSATION
+                                      │
+                                      ▼
+                                   RESOLVE
 ```
 
 ---
@@ -82,9 +101,18 @@ Persist AI Message (external_message_id = Meta Message ID) & Commit
 
 ## 4. API Endpoints (v1)
 
-### WhatsApp Cloud API Integration (CHUNK 6A - 6D)
+### Human Handoff & Escalation (CHUNK 8)
+* `GET /api/v1/whatsapp/handoffs` — List pending/assigned handoffs for the clinic (Staff/Admin/Owner)
+* `GET /api/v1/whatsapp/handoffs/{handoff_id}` — Get handoff details (Staff/Admin/Owner)
+* `POST /api/v1/whatsapp/handoffs` — Manually escalate a conversation (Staff/Admin/Owner)
+* `POST /api/v1/whatsapp/handoffs/{handoff_id}/assign` — Claim/assign handoff (Staff/Admin/Owner)
+* `POST /api/v1/whatsapp/handoffs/{handoff_id}/resolve` — Resolve handoff (Staff/Admin/Owner)
+* `POST /api/v1/whatsapp/handoffs/{handoff_id}/cancel` — Cancel handoff (Staff/Admin/Owner)
+* `POST /api/v1/whatsapp/handoffs/{handoff_id}/messages` — Send staff reply on WhatsApp (Staff/Admin/Owner)
+
+### WhatsApp Cloud API Integration (CHUNK 6A - 6E, CHUNK 7)
 * `GET /api/v1/whatsapp/webhook` — Meta Webhook verification handshake (plain text challenge)
-* `POST /api/v1/whatsapp/webhook` — Meta Webhook event ingestion & AI response dispatch
+* `POST /api/v1/whatsapp/webhook` — Meta Webhook event ingestion, lead extraction & AI response dispatch
 * `POST /api/v1/whatsapp/accounts` — Configure clinic WhatsApp account (Owner/Admin)
 * `GET /api/v1/whatsapp/accounts` — List clinic WhatsApp accounts (Owner/Admin)
 * `GET /api/v1/whatsapp/accounts/{account_id}` — View WhatsApp account details (Owner/Admin)
