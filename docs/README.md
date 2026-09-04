@@ -2,7 +2,7 @@
 
 ## 1. Overview
 **AI Receptionist** is a production-oriented multi-tenant SaaS platform designed for dental and aesthetic clinics in Karachi, Pakistan.
-It automates patient inquiries, FAQs, appointment requests, service explanations, lead extraction & qualification, and human staff escalation via WhatsApp.
+It automates patient inquiries, FAQs, appointment requests, service explanations, lead extraction & qualification, staff escalation, and appointment lifecycle management via WhatsApp.
 
 ---
 
@@ -20,99 +20,61 @@ It automates patient inquiries, FAQs, appointment requests, service explanations
 
 ---
 
-## 3. WhatsApp & AI Pipeline (Chunks 6A–6E, 7 & 8)
+## 3. Appointment System (Chunk 9)
 
+### 3.1 Data Model
+* **Fields:** `id`, `clinic_id`, `lead_id`, `conversation_id`, `created_by_user_id`, `title`, `description`, `scheduled_at`, `duration_minutes`, `timezone`, `status`, `notes`, `cancelled_at`, `created_at`, `updated_at`.
+* **Indexes:** `(clinic_id, scheduled_at)`, `(clinic_id, status)`, `(clinic_id, lead_id)`.
+
+### 3.2 State Lifecycle & Transition Machine
 ```text
-                         CUSTOMER
-                            │
-                            ▼
-                     META WHATSAPP
-                            │
-                            ▼
-                  HMAC WEBHOOK SECURITY
-                            │
-                            ▼
-                    TENANT RESOLUTION
-                            │
-                            ▼
-                  MESSAGE PERSISTENCE
-                            │
-                            ▼
-                 CONVERSATION RESOLUTION
-                            │
-                ┌───────────┴───────────┐
-                │                       │
-          HUMAN ACTIVE?             AI ACTIVE?
-                │                       │
-               YES                     YES
-                │                       │
-                ▼                       ▼
-        ┌──────────────┐        ┌──────────────┐
-        │ WAIT FOR     │        │ AI RECEPTIONIST│
-        │ STAFF        │        └───────┬───────┘
-        └──────┬───────┘                │
-               │                ┌───────┴────────┐
-               │                │                │
-               │             NORMAL          ESCALATE
-               │                │                │
-               │                ▼                ▼
-               │           AI RESPONSE     HANDOFF CREATED
-               │                                 │
-               │                                 ▼
-               │                         ┌───────────────┐
-               │                         │ STAFF QUEUE   │
-               │                         └───────┬───────┘
-               │                                 │
-               │                              CLAIM
-               │                                 │
-               └──────────────────────┬──────────┘
-                                      ▼
-                              HUMAN CONVERSATION
-                                      │
-                                      ▼
-                                   RESOLVE
+                 ┌──────────────┐
+                 │  REQUESTED   │ (AI intake or staff booking request)
+                 └──────┬───────┘
+                        │
+                 confirm or cancel
+                        │
+         ┌──────────────┴──────────────┐
+         ▼                             ▼
+  ┌──────────────┐              ┌──────────────┐
+  │  CONFIRMED   │              │  CANCELLED   │ (Terminal, records cancelled_at)
+  └──────┬───────┘              └──────────────┘
+         │
+  complete / no-show / reschedule
+         │
+   ┌─────┴──────────────────┐
+   ▼                        ▼
+┌──────────────┐     ┌──────────────┐
+│  COMPLETED   │     │   NO_SHOW    │ (Terminal states)
+└──────────────┘     └──────────────┘
 ```
+
+### 3.3 Endpoints (`/api/v1/appointments`)
+* `GET /api/v1/appointments` — List appointments with pagination and filters (`status`, `lead_id`, `conversation_id`, `date`, `date_from`, `date_to`)
+* `POST /api/v1/appointments` — Create appointment
+* `GET /api/v1/appointments/{appointment_id}` — Get appointment details
+* `PATCH /api/v1/appointments/{appointment_id}` — Update appointment time, duration, or notes
+* `POST /api/v1/appointments/{appointment_id}/confirm` — Confirm appointment
+* `POST /api/v1/appointments/{appointment_id}/cancel` — Cancel appointment
+* `POST /api/v1/appointments/{appointment_id}/complete` — Mark appointment completed
+* `POST /api/v1/appointments/{appointment_id}/no-show` — Mark appointment as patient no-show
 
 ---
 
-## 4. Human Handoff & Escalation Lifecycle (Chunk 8)
+## 4. Dashboard & Operations (Chunk 10)
 
-### 4.1 State Machine
-```text
-                 ┌──────────────┐
-                 │ AI ACTIVE    │ (conversation.status = 'open')
-                 └──────┬───────┘
-                        │
-                 escalation (explicit request, complaint, ai uncertainty)
-                        │
-                        ▼
-              ┌──────────────────┐
-              │ HUMAN REQUESTED  │ (handoff.status = 'pending', conversation.status = 'human_required')
-              └────────┬─────────┘
-                       │
-                    assign (staff claims handoff)
-                       │
-                       ▼
-              ┌──────────────────┐
-              │ HUMAN ACTIVE     │ (handoff.status = 'assigned', assigned_to_user_id = user.id)
-              └────────┬─────────┘
-                       │
-                    resolve (staff finishes inquiry)
-                       │
-                       ▼
-              ┌──────────────────┐
-              │ RESOLVED         │ (handoff.status = 'resolved', conversation.status = 'open')
-              └──────────────────┘
-```
+### 4.1 Summary Endpoint (`/api/v1/dashboard/summary`)
+* **Method:** `GET /api/v1/dashboard/summary`
+* **Authorization:** `require_staff` (Requires valid JWT and `X-Clinic-ID`)
+* **Response Payload (`DashboardSummaryResponse`):**
+  * `metrics`: `total_leads`, `total_conversations`, `active_handoffs`, `today_appointments`, `pending_appointments`, `total_appointments`
+  * `today_appointments`: List of appointments scheduled for today with lead contact details and status
+  * `active_handoffs`: List of pending human handoff escalations with priority, reason, and claim actions
+  * `recent_conversations`: List of active WhatsApp conversations with message counts and status
+  * `recent_leads`: List of recently created/qualified leads with score, stage, and contact details
 
-### 4.2 Endpoints (`/api/v1/whatsapp/handoffs`)
-* `GET /api/v1/whatsapp/handoffs` — List pending/assigned handoffs for the clinic (Staff/Admin/Owner)
-* `GET /api/v1/whatsapp/handoffs/{handoff_id}` — Get handoff details (Staff/Admin/Owner)
-* `POST /api/v1/whatsapp/handoffs` — Manually escalate a conversation (Staff/Admin/Owner)
-* `POST /api/v1/whatsapp/handoffs/{handoff_id}/assign` — Claim/assign handoff (Staff/Admin/Owner)
-* `POST /api/v1/whatsapp/handoffs/{handoff_id}/resolve` — Resolve handoff (Staff/Admin/Owner)
-* `POST /api/v1/whatsapp/handoffs/{handoff_id}/cancel` — Cancel handoff (Staff/Admin/Owner)
-* `POST /api/v1/whatsapp/handoffs/{handoff_id}/messages` — Send staff reply on WhatsApp (Staff/Admin/Owner)
+### 4.2 Frontend Single-Pane Dashboard
+* Located at `/dashboard` with auto-refreshing operational metrics, appointment action buttons (confirm, complete, cancel, no-show), handoff claim/resolve triggers, and conversation feeds.
 
 ---
 
@@ -130,5 +92,6 @@ It automates patient inquiries, FAQs, appointment requests, service explanations
 - **CHUNK 6E**: WhatsApp End-to-End Integration Hardening & Testing *(Completed)*
 - **CHUNK 7**: Lead Extraction & Automatic Lead Qualification *(Completed)*
 - **CHUNK 8**: Human Handoff & Escalation System *(Completed)*
-- **CHUNK 9**: Appointment Booking & Scheduling Automation *(Pending)*
-- **CHUNK 10**: Clinic Staff Dashboard UI & Live Chat CRM *(Pending)*
+- **CHUNK 9**: Appointment Booking & Scheduling System *(Completed)*
+- **CHUNK 10**: Clinic Staff Dashboard Expansion *(Completed)*
+

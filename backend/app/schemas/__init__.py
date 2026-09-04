@@ -25,8 +25,11 @@ from app.schemas.conversation import (
 from app.schemas.message import MessageBase, MessageCreate, MessageRead
 from app.schemas.appointment import (
     AppointmentBase,
+    AppointmentCancelRequest,
     AppointmentCreate,
     AppointmentRead,
+    AppointmentStatus,
+    AppointmentStatusUpdate,
     AppointmentUpdate,
 )
 from app.schemas.knowledge import (
@@ -62,6 +65,14 @@ from app.schemas.handoff import (
     HandoffResolve,
     HandoffStatus,
     StaffMessageCreate,
+)
+from app.schemas.dashboard import (
+    DashboardAppointmentItem,
+    DashboardConversationItem,
+    DashboardHandoffItem,
+    DashboardLeadItem,
+    DashboardMetrics,
+    DashboardSummaryResponse,
 )
 from app.schemas.auth import (
     AuthenticatedTestResponse,
@@ -101,8 +112,11 @@ __all__ = [
     "MessageCreate",
     "MessageRead",
     "AppointmentBase",
+    "AppointmentCancelRequest",
     "AppointmentCreate",
     "AppointmentRead",
+    "AppointmentStatus",
+    "AppointmentStatusUpdate",
     "AppointmentUpdate",
     "KnowledgeCreate",
     "KnowledgeDocumentBase",
@@ -128,6 +142,12 @@ __all__ = [
     "HandoffStatus",
     "HandoffReason",
     "StaffMessageCreate",
+    "DashboardMetrics",
+    "DashboardAppointmentItem",
+    "DashboardHandoffItem",
+    "DashboardConversationItem",
+    "DashboardLeadItem",
+    "DashboardSummaryResponse",
     "LoginRequest",
     "TokenResponse",
     "AuthenticatedTestResponse",

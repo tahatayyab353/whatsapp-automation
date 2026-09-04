@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     auth,
     clinics,
     conversations,
+    dashboard,
     handoffs,
     health,
     knowledge,
@@ -25,6 +26,9 @@ api_router.include_router(health.router, tags=["Health"])
 
 # System Information
 api_router.include_router(system.router, tags=["System"])
+
+# Clinic Operations Dashboard
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 
 # Clinic Management
 api_router.include_router(clinics.router, prefix="/clinics", tags=["Clinics"])

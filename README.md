@@ -1,7 +1,7 @@
 # AI Receptionist — WhatsApp AI Receptionist for Clinics
 
-> **Current Project Status: CHUNK 8 (Human Handoff & Escalation System Completed)**  
-> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, outbound WhatsApp AI reply dispatching via Meta Graph API, automated structured Lead Extraction & Qualification, and Human Handoff & Escalation Queue.
+> **Current Project Status: CHUNK 10 (Clinic Staff Dashboard Expansion Completed)**  
+> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, outbound WhatsApp AI reply dispatching via Meta Graph API, automated structured Lead Extraction & Qualification, Human Handoff Escalation, Appointment Booking System, and Clinic Staff Single-Pane Operations Dashboard.
 
 ---
 
@@ -16,12 +16,12 @@ The product enables clinics to automate patient communication through WhatsApp, 
 * Patient lead capture and automated structured qualification
 * Explicit & AI-detected human handoff and staff escalation queue
 * Staff reply transmission to WhatsApp with audit logs
-* Appointment request intake and scheduling
-* Clinic staff dashboard and conversation analytics
+* Appointment intake, confirmation, rescheduling, and status tracking
+* Clinic staff dashboard and appointment management interface
 
 ---
 
-## 2. Complete WhatsApp AI & Human Handoff Pipeline
+## 2. Complete WhatsApp AI & Appointment Pipeline
 
 ```text
                          CUSTOMER
@@ -54,24 +54,25 @@ The product enables clinics to automate patient communication through WhatsApp, 
         └──────┬───────┘                │
                │                ┌───────┴────────┐
                │                │                │
-               │             NORMAL          ESCALATE
-               │                │                │
+               │             NORMAL          APPOINTMENT
+               │                │             REQUEST
                │                ▼                ▼
-               │           AI RESPONSE     HANDOFF CREATED
+               │           AI RESPONSE    APPOINTMENT RECORD
+               │                          (status=requested)
                │                                 │
                │                                 ▼
                │                         ┌───────────────┐
                │                         │ STAFF QUEUE   │
                │                         └───────┬───────┘
                │                                 │
-               │                              CLAIM
+               │                              CONFIRM
                │                                 │
                └──────────────────────┬──────────┘
                                       ▼
-                              HUMAN CONVERSATION
+                              PATIENT VISIT
                                       │
                                       ▼
-                                   RESOLVE
+                                  COMPLETED
 ```
 
 ---
@@ -101,6 +102,16 @@ The product enables clinics to automate patient communication through WhatsApp, 
 
 ## 4. API Endpoints (v1)
 
+### Appointment Management (CHUNK 9)
+* `GET /api/v1/appointments` — List appointments with pagination and filters (`status`, `lead_id`, `conversation_id`, `date`, `date_from`, `date_to`)
+* `POST /api/v1/appointments` — Create appointment (Staff/Admin/Owner)
+* `GET /api/v1/appointments/{appointment_id}` — Get appointment details (Staff/Admin/Owner)
+* `PATCH /api/v1/appointments/{appointment_id}` — Update appointment details (Staff/Admin/Owner)
+* `POST /api/v1/appointments/{appointment_id}/confirm` — Confirm appointment (Staff/Admin/Owner)
+* `POST /api/v1/appointments/{appointment_id}/cancel` — Cancel appointment (Staff/Admin/Owner)
+* `POST /api/v1/appointments/{appointment_id}/complete` — Complete appointment (Staff/Admin/Owner)
+* `POST /api/v1/appointments/{appointment_id}/no-show` — Mark appointment no-show (Staff/Admin/Owner)
+
 ### Human Handoff & Escalation (CHUNK 8)
 * `GET /api/v1/whatsapp/handoffs` — List pending/assigned handoffs for the clinic (Staff/Admin/Owner)
 * `GET /api/v1/whatsapp/handoffs/{handoff_id}` — Get handoff details (Staff/Admin/Owner)
@@ -118,32 +129,6 @@ The product enables clinics to automate patient communication through WhatsApp, 
 * `GET /api/v1/whatsapp/accounts/{account_id}` — View WhatsApp account details (Owner/Admin)
 * `PATCH /api/v1/whatsapp/accounts/{account_id}` — Update credentials / display name (Owner/Admin)
 * `DELETE /api/v1/whatsapp/accounts/{account_id}` — Deactivate integration preserving history (Owner/Admin)
-
-### AI Receptionist
-* `POST /api/v1/ai/test-chat` — Execute AI receptionist completion on a conversation (persists messages)
-
-### Authentication & Profile
-* `POST /api/v1/auth/login` — User login returning JWT access token
-* `GET /api/v1/auth/me` — Current user profile
-
-### Clinic & Member Management
-* `GET /api/v1/clinics/me` — Clinic profile
-* `PATCH /api/v1/clinics/me` — Update clinic profile
-* `GET /api/v1/members` — List clinic members
-* `PATCH /api/v1/members/{user_id}/role` — Update member role
-* `DELETE /api/v1/members/{user_id}` — Remove member from clinic
-
-### Leads, Conversations & Knowledge
-* `POST /api/v1/leads` — Create patient lead
-* `GET /api/v1/leads` — List & filter leads
-* `POST /api/v1/conversations` — Start conversation thread
-* `GET /api/v1/conversations` — List conversations
-* `POST /api/v1/conversations/{conv_id}/messages` — Send message
-* `GET /api/v1/conversations/{conv_id}/messages` — List messages chronologically
-* `POST /api/v1/knowledge` — Create knowledge doc
-* `GET /api/v1/knowledge` — List knowledge docs
-* `POST /api/v1/appointments` — Schedule patient appointment
-* `GET /api/v1/appointments` — List appointments
 
 ---
 

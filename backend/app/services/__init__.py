@@ -22,6 +22,10 @@ from app.services.handoff_service import (
     HandoffService,
     handoff_service,
 )
+from app.services.dashboard_service import (
+    DashboardService,
+    dashboard_service,
+)
 
 __all__ = [
     "clinic_service",
@@ -40,4 +44,6 @@ __all__ = [
     "lead_extraction_service",
     "HandoffService",
     "handoff_service",
+    "DashboardService",
+    "dashboard_service",
 ]

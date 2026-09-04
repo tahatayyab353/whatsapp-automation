@@ -220,6 +220,27 @@ CRITICAL INSTRUCTIONS:
             db.refresh(lead)
             logger.info("Updated CRM lead %s with extracted AI details.", lead.id)
 
+        # 4. If customer requested an appointment, idempotently record an appointment request
+        if extracted.status == "appointment_requested":
+            try:
+                from app.services.appointment_service import appointment_service
+                from datetime import timedelta
+                from app.models.base import utc_now
+                # Default request slot: tomorrow at current time + 1 day
+                target_sched = utc_now() + timedelta(days=1)
+                title_desc = f"{extracted.service_interest or 'Consultation'} Request"
+                appointment_service.create_appointment_request_from_ai(
+                    db=db,
+                    clinic_id=clinic_id,
+                    lead_id=lead.id,
+                    conversation_id=conversation.id,
+                    scheduled_at=target_sched,
+                    title=title_desc,
+                    notes=extracted.notes or "AI detected appointment request from conversation transcript.",
+                )
+            except Exception as exc:
+                logger.warning("Failed to auto-create appointment request from AI extraction: %s", str(exc))
+
         return extracted
 
 
