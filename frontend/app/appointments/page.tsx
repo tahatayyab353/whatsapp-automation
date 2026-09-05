@@ -2,6 +2,15 @@
 
 import React, { useState } from "react";
 
+interface ReminderStatus {
+  reminder_type: "APPOINTMENT_24H" | "APPOINTMENT_2H";
+  status: "pending" | "processing" | "sent" | "failed" | "cancelled";
+  scheduled_for: string;
+  sent_at?: string;
+  failed_at?: string;
+  attempts?: number;
+}
+
 interface AppointmentItem {
   id: string;
   lead_name: string;
@@ -13,6 +22,7 @@ interface AppointmentItem {
   timezone: string;
   status: "requested" | "confirmed" | "cancelled" | "completed" | "no_show" | "rescheduled";
   notes?: string;
+  reminders?: ReminderStatus[];
 }
 
 const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
@@ -23,10 +33,25 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     title: "Scaling & Polishing",
     description: "Routine checkup and teeth cleaning requested via WhatsApp",
     scheduled_at: "2026-09-05T10:30:00Z",
+    scheduled_at: "2026-09-06T10:30:00Z",
     duration_minutes: 30,
     timezone: "Asia/Karachi",
     status: "requested",
     notes: "Patient prefers morning slot.",
+    reminders: [
+      {
+        reminder_type: "APPOINTMENT_24H",
+        status: "pending",
+        scheduled_for: "2026-09-05T10:30:00Z",
+        attempts: 0,
+      },
+      {
+        reminder_type: "APPOINTMENT_2H",
+        status: "pending",
+        scheduled_for: "2026-09-06T08:30:00Z",
+        attempts: 0,
+      },
+    ],
   },
   {
     id: "appt-002",
@@ -35,10 +60,26 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     title: "Invisalign Consultation",
     description: "Aligner assessment and 3D scan consultation",
     scheduled_at: "2026-09-05T14:00:00Z",
+    scheduled_at: "2026-09-06T14:00:00Z",
     duration_minutes: 45,
     timezone: "Asia/Karachi",
     status: "confirmed",
     notes: "Confirmed by Dr. Tariq.",
+    reminders: [
+      {
+        reminder_type: "APPOINTMENT_24H",
+        status: "sent",
+        scheduled_for: "2026-09-05T14:00:00Z",
+        sent_at: "2026-09-05T14:00:05Z",
+        attempts: 1,
+      },
+      {
+        reminder_type: "APPOINTMENT_2H",
+        status: "pending",
+        scheduled_for: "2026-09-06T12:00:00Z",
+        attempts: 0,
+      },
+    ],
   },
   {
     id: "appt-003",
@@ -47,17 +88,40 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     title: "Dental Veneers Checkup",
     description: "Hollywood smile assessment",
     scheduled_at: "2026-09-06T11:00:00Z",
+    scheduled_at: "2026-09-07T11:00:00Z",
     duration_minutes: 30,
     timezone: "Asia/Karachi",
     status: "completed",
     notes: "Treatment plan provided.",
+    reminders: [
+      {
+        reminder_type: "APPOINTMENT_24H",
+        status: "sent",
+        scheduled_for: "2026-09-06T11:00:00Z",
+        sent_at: "2026-09-06T11:00:02Z",
+        attempts: 1,
+      },
+      {
+        reminder_type: "APPOINTMENT_2H",
+        status: "sent",
+        scheduled_for: "2026-09-07T09:00:00Z",
+        sent_at: "2026-09-07T09:00:04Z",
+        attempts: 1,
+      },
+    ],
   },
 ];
 
+
 export default function AppointmentsPage() {
+  const [mounted, setMounted] = useState<boolean>(false);
   const [appointments, setAppointments] = useState<AppointmentItem[]>(SAMPLE_APPOINTMENTS);
   const [selectedAppt, setSelectedAppt] = useState<AppointmentItem | null>(SAMPLE_APPOINTMENTS[0]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleStatusChange = (id: string, newStatus: AppointmentItem["status"]) => {
     setAppointments((prev) =>
@@ -90,6 +154,23 @@ export default function AppointmentsPage() {
     }
   };
 
+  const getReminderBadge = (status?: string) => {
+    switch (status) {
+      case "sent":
+        return "bg-emerald-100 text-emerald-800 border-emerald-300";
+      case "pending":
+        return "bg-amber-100 text-amber-800 border-amber-300";
+      case "processing":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "cancelled":
+        return "bg-slate-100 text-slate-600 border-slate-300";
+      case "failed":
+        return "bg-rose-100 text-rose-800 border-rose-300";
+      default:
+        return "bg-gray-100 text-gray-600 border-gray-200";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -99,12 +180,15 @@ export default function AppointmentsPage() {
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full mb-2 border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               CHUNK 9 — Appointment System Active
+              CHUNK 11 — Notifications & Reminders Active
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Clinic Appointments</h1>
             <p className="text-sm text-slate-500">
               Manage patient bookings, AI booking requests, and confirmations.
+              Manage patient bookings, AI booking requests, and automated WhatsApp reminders.
             </p>
           </div>
+
           {/* Status filter */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status:</span>
@@ -163,16 +247,22 @@ export default function AppointmentsPage() {
                           >
                             {appt.status.replace("_", " ")}
                           </span>
-                          <div className="text-xs text-slate-500 mt-1">
-                            {dateObj.toLocaleDateString("en-PK", {
-                              month: "short",
-                              day: "numeric",
-                            })}{" "}
-                            at{" "}
-                            {dateObj.toLocaleTimeString("en-PK", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                          <div suppressHydrationWarning className="text-xs text-slate-500 mt-1">
+                            {mounted ? (
+                              <>
+                                {dateObj.toLocaleDateString("en-PK", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}{" "}
+                                at{" "}
+                                {dateObj.toLocaleTimeString("en-PK", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </>
+                            ) : (
+                              "Loading..."
+                            )}
                           </div>
                         </div>
                       </div>
@@ -208,8 +298,8 @@ export default function AppointmentsPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="font-semibold text-slate-400 uppercase tracking-wider block">Date & Time</span>
-                    <span className="text-slate-800 font-medium">
-                      {new Date(selectedAppt.scheduled_at).toLocaleDateString()}
+                    <span suppressHydrationWarning className="text-slate-800 font-medium">
+                      {mounted ? new Date(selectedAppt.scheduled_at).toLocaleDateString() : "Loading..."}
                     </span>
                   </div>
                   <div>
@@ -238,8 +328,86 @@ export default function AppointmentsPage() {
                   </div>
                 )}
 
+                {/* WhatsApp Reminders (Chunk 11) */}
+                <div className="pt-2 border-t border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      WhatsApp Reminders
+                    </span>
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-medium border border-emerald-200">
+                      Auto
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {/* 24H Reminder */}
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-slate-700 text-[11px]">24h Reminder</span>
+                        {(() => {
+                          const r24 = selectedAppt.reminders?.find((r) => r.reminder_type === "APPOINTMENT_24H");
+                          const rStatus = r24 ? r24.status : "pending";
+                          return (
+                            <span
+                              className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-full border capitalize ${getReminderBadge(
+                                rStatus
+                              )}`}
+                            >
+                              {rStatus}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {(() => {
+                          const r24 = selectedAppt.reminders?.find((r) => r.reminder_type === "APPOINTMENT_24H");
+                          if (r24?.sent_at) {
+                            return `Sent: ${new Date(r24.sent_at).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}`;
+                          }
+                          if (r24?.scheduled_for) {
+                            return `Due: ${new Date(r24.scheduled_for).toLocaleDateString("en-PK", { month: "short", day: "numeric" })}`;
+                          }
+                          return "Auto-scheduled";
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* 2H Reminder */}
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-slate-700 text-[11px]">2h Reminder</span>
+                        {(() => {
+                          const r2 = selectedAppt.reminders?.find((r) => r.reminder_type === "APPOINTMENT_2H");
+                          const rStatus = r2 ? r2.status : "pending";
+                          return (
+                            <span
+                              className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-full border capitalize ${getReminderBadge(
+                                rStatus
+                              )}`}
+                            >
+                              {rStatus}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {(() => {
+                          const r2 = selectedAppt.reminders?.find((r) => r.reminder_type === "APPOINTMENT_2H");
+                          if (r2?.sent_at) {
+                            return `Sent: ${new Date(r2.sent_at).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}`;
+                          }
+                          if (r2?.scheduled_for) {
+                            return `Due: ${new Date(r2.scheduled_for).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}`;
+                          }
+                          return "Auto-scheduled";
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Actions */}
                 <div className="pt-4 border-t border-slate-100 space-y-2">
+
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Quick Actions</span>
                   {selectedAppt.status === "requested" && (
                     <button

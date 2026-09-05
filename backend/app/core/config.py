@@ -59,10 +59,10 @@ class Settings(BaseSettings):
     # AI Engine Configuration (CHUNK 5)
     AI_PROVIDER: str = "gemini"
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-3.6-flash"
 
     GROQ_API_KEY: Optional[str] = None
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "qwen/qwen3.8-27b"
 
     AI_TEMPERATURE: float = 0.2
     AI_MAX_OUTPUT_TOKENS: int = 500

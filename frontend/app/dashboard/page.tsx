@@ -195,9 +195,63 @@ const DEFAULT_DATA: DashboardData = {
 };
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState<boolean>(false);
   const [data, setData] = useState<DashboardData>(DEFAULT_DATA);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const clinicId = typeof window !== "undefined" ? localStorage.getItem("clinic_id") : null;
+
+      let res;
+      if (token && clinicId) {
+        res = await fetch(`${apiUrl}/api/v1/dashboard/summary`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Clinic-ID": clinicId,
+          },
+        });
+      } else {
+        res = await fetch(`${apiUrl}/api/v1/dashboard/live-preview`);
+      }
+
+      if (res && res.ok) {
+        const json = await res.json();
+        setData({
+          clinic_id: json.clinic_id || "demo-clinic",
+          clinic_name: json.clinic_name || "Demo Dental Clinic",
+          timezone: json.timezone || "Asia/Karachi",
+          metrics: {
+            total_leads: json.metrics?.total_leads ?? 0,
+            open_conversations: json.metrics?.open_conversations ?? 0,
+            pending_handoffs: json.metrics?.pending_handoffs ?? 0,
+            today_appointments: json.metrics?.today_appointments ?? 0,
+            confirmed_appointments_today: json.metrics?.confirmed_appointments_today ?? 0,
+            completed_appointments_today: json.metrics?.completed_appointments_today ?? 0,
+            new_leads_today: json.metrics?.new_leads_today ?? 0,
+          },
+          today_appointments: json.today_appointments || [],
+          pending_handoffs: json.pending_handoffs || json.active_handoffs || [],
+          recent_conversations: json.recent_conversations || [],
+          recent_leads: json.recent_leads || [],
+        });
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch live dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Status badge styling helper
   const getStatusBadge = (status: string) => {
@@ -452,11 +506,13 @@ export default function DashboardPage() {
                               >
                                 {appt.status.replace("_", " ")}
                               </span>
-                              <span className="text-xs font-semibold text-slate-700">
-                                {dateObj.toLocaleTimeString("en-PK", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                              <span suppressHydrationWarning className="text-xs font-semibold text-slate-700">
+                                {mounted
+                                  ? dateObj.toLocaleTimeString("en-PK", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "Loading..."}
                               </span>
                             </div>
 

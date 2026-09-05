@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.lead import Lead
     from app.models.conversation import Conversation
     from app.models.user import User
+    from app.models.appointment_reminder import AppointmentReminder
 
 
 class Appointment(Base, TimestampMixin):
@@ -107,3 +109,8 @@ class Appointment(Base, TimestampMixin):
     lead: Mapped[Optional["Lead"]] = relationship("Lead", back_populates="appointments")
     conversation: Mapped[Optional["Conversation"]] = relationship("Conversation", back_populates="appointments")
     created_by: Mapped[Optional["User"]] = relationship("User")
+    reminders: Mapped[List["AppointmentReminder"]] = relationship(
+        "AppointmentReminder",
+        back_populates="appointment",
+        cascade="all, delete-orphan",
+    )

@@ -74,6 +74,11 @@ from app.schemas.dashboard import (
     DashboardMetrics,
     DashboardSummaryResponse,
 )
+from app.schemas.appointment_reminder import (
+    AppointmentReminderBase,
+    AppointmentReminderRead,
+    AppointmentReminderSummary,
+)
 from app.schemas.auth import (
     AuthenticatedTestResponse,
     ClinicContextTestResponse,
@@ -155,4 +160,7 @@ __all__ = [
     "RoleTestResponse",
     "AIChatRequest",
     "AIChatResponse",
+    "AppointmentReminderBase",
+    "AppointmentReminderRead",
+    "AppointmentReminderSummary",
 ]

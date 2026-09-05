@@ -23,6 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: ai_receptionist_backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ai_receptionist
       ENVIRONMENT: development
@@ -42,6 +44,8 @@ services:
       dockerfile: Dockerfile
     container_name: ai_receptionist_frontend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:

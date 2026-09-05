@@ -15,6 +15,9 @@ from app.core.logging import logger, request_id_ctx_var
 from app.schemas.common import ErrorBody, ErrorResponse, HealthResponse
 
 
+from app.services.reminder_scheduler import reminder_scheduler
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(
@@ -23,8 +26,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         settings.APP_VERSION,
         settings.ENVIRONMENT,
     )
+    # Start periodic appointment reminder background scheduler
+    await reminder_scheduler.start()
     yield
+    # Stop reminder scheduler on shutdown
+    await reminder_scheduler.stop()
     logger.info("Shutting down %s", settings.APP_NAME)
+
 
 
 app = FastAPI(

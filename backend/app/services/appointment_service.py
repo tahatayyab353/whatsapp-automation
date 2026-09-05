@@ -93,6 +93,14 @@ class AppointmentService:
         db.commit()
         db.refresh(appointment)
         logger.info("Created appointment %s for clinic %s", appointment.id, clinic_id)
+
+        # CHUNK 11: Schedule 24h and 2h notification reminders for eligible appointments
+        try:
+            from app.services.reminder_service import reminder_service
+            reminder_service.schedule_appointment_reminders(db=db, appointment=appointment)
+        except Exception as exc:
+            logger.error("Failed to schedule reminders for appointment %s: %s", appointment.id, str(exc))
+
         return appointment
 
     @classmethod
@@ -207,6 +215,17 @@ class AppointmentService:
         db.commit()
         db.refresh(appointment)
         logger.info("Updated appointment %s for clinic %s", appointment.id, clinic_id)
+
+        # CHUNK 11: Reschedule or cancel reminders if appointment time or status changed
+        try:
+            from app.services.reminder_service import reminder_service
+            if payload.scheduled_at:
+                reminder_service.handle_appointment_rescheduled(db=db, appointment=appointment)
+            elif payload.status in ("cancelled", "completed", "no_show"):
+                reminder_service.handle_appointment_cancelled_or_closed(db=db, appointment_id=appointment.id)
+        except Exception as exc:
+            logger.error("Failed to update reminders for appointment %s: %s", appointment.id, str(exc))
+
         return appointment
 
     @classmethod
@@ -226,6 +245,14 @@ class AppointmentService:
         db.commit()
         db.refresh(appointment)
         logger.info("Confirmed appointment %s", appointment.id)
+
+        # CHUNK 11: Ensure reminder schedules exist for confirmed appointment
+        try:
+            from app.services.reminder_service import reminder_service
+            reminder_service.schedule_appointment_reminders(db=db, appointment=appointment)
+        except Exception as exc:
+            logger.error("Failed to schedule reminders on confirm for appointment %s: %s", appointment.id, str(exc))
+
         return appointment
 
     @classmethod
@@ -246,6 +273,14 @@ class AppointmentService:
         db.commit()
         db.refresh(appointment)
         logger.info("Cancelled appointment %s", appointment.id)
+
+        # CHUNK 11: Cancel pending reminders for cancelled appointment
+        try:
+            from app.services.reminder_service import reminder_service
+            reminder_service.handle_appointment_cancelled_or_closed(db=db, appointment_id=appointment.id, reason=reason)
+        except Exception as exc:
+            logger.error("Failed to cancel reminders for appointment %s: %s", appointment.id, str(exc))
+
         return appointment
 
     @classmethod
@@ -265,6 +300,14 @@ class AppointmentService:
         db.commit()
         db.refresh(appointment)
         logger.info("Completed appointment %s", appointment.id)
+
+        # CHUNK 11: Cancel any un-fired reminders for completed appointment
+        try:
+            from app.services.reminder_service import reminder_service
+            reminder_service.handle_appointment_cancelled_or_closed(db=db, appointment_id=appointment.id, reason="Appointment completed")
+        except Exception as exc:
+            logger.error("Failed to cancel reminders for completed appointment %s: %s", appointment.id, str(exc))
+
         return appointment
 
     @classmethod
@@ -284,6 +327,14 @@ class AppointmentService:
         db.commit()
         db.refresh(appointment)
         logger.info("Marked appointment %s as no-show", appointment.id)
+
+        # CHUNK 11: Cancel any un-fired reminders for no-show appointment
+        try:
+            from app.services.reminder_service import reminder_service
+            reminder_service.handle_appointment_cancelled_or_closed(db=db, appointment_id=appointment.id, reason="Patient marked as no-show")
+        except Exception as exc:
+            logger.error("Failed to cancel reminders for no-show appointment %s: %s", appointment.id, str(exc))
+
         return appointment
 
     @classmethod

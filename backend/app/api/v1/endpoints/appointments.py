@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, datetime
 from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
@@ -14,10 +15,13 @@ from app.schemas.appointment import (
     AppointmentStatusUpdate,
     AppointmentUpdate,
 )
+from app.schemas.appointment_reminder import AppointmentReminderRead
 from app.schemas.common import PaginatedResponse
 from app.services.appointment_service import appointment_service
+from app.services.reminder_service import reminder_service
 
 router = APIRouter()
+
 
 
 @router.post(
@@ -205,3 +209,29 @@ async def mark_appointment_no_show(
         notes=notes,
     )
     return AppointmentRead.model_validate(no_show)
+
+
+@router.get(
+    "/{appointment_id}/reminders",
+    response_model=List[AppointmentReminderRead],
+    summary="Get Appointment Reminders",
+    description="Fetches all reminder delivery logs and statuses for a specific appointment.",
+)
+async def get_appointment_reminders(
+    appointment_id: uuid.UUID,
+    clinic_context: ClinicContext = Depends(require_staff),
+    db: Session = Depends(get_db),
+) -> List[AppointmentReminderRead]:
+    # Validate appointment belongs to active clinic
+    appointment_service.get_appointment(
+        db=db,
+        clinic_id=clinic_context.clinic.id,
+        appointment_id=appointment_id,
+    )
+    reminders = reminder_service.get_reminders_for_appointment(
+        db=db,
+        clinic_id=clinic_context.clinic.id,
+        appointment_id=appointment_id,
+    )
+    return [AppointmentReminderRead.model_validate(r) for r in reminders]
+

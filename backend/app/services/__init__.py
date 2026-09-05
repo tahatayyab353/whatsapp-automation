@@ -26,6 +26,14 @@ from app.services.dashboard_service import (
     DashboardService,
     dashboard_service,
 )
+from app.services.reminder_service import (
+    ReminderService,
+    reminder_service,
+)
+from app.services.reminder_scheduler import (
+    ReminderScheduler,
+    reminder_scheduler,
+)
 
 __all__ = [
     "clinic_service",
@@ -46,4 +54,8 @@ __all__ = [
     "handoff_service",
     "DashboardService",
     "dashboard_service",
+    "ReminderService",
+    "reminder_service",
+    "ReminderScheduler",
+    "reminder_scheduler",
 ]
