@@ -3,11 +3,14 @@ from typing import Optional
 from app.core.logging import logger
 from app.db.database import SessionLocal
 from app.services.reminder_service import reminder_service
+from app.services.calendar_service import calendar_service
 
 
 class ReminderScheduler:
     """
     Periodic background runner that discovers and processes due appointment reminders.
+    Periodic background runner that discovers and processes due appointment reminders
+    and external calendar synchronizations.
     Runs inside FastAPI lifespan in production and can be paused/triggered deterministically.
     """
 
@@ -23,6 +26,7 @@ class ReminderScheduler:
         self._running = True
         self._task = asyncio.create_task(self._run_loop())
         logger.info("Started Appointment Reminder Scheduler (interval=%.1fs)", self.interval_seconds)
+        logger.info("Started Appointment Reminder & Calendar Scheduler (interval=%.1fs)", self.interval_seconds)
 
     async def stop(self) -> None:
         """Stops the background periodic reminder processor loop cleanly."""
@@ -37,6 +41,7 @@ class ReminderScheduler:
                 pass
             self._task = None
         logger.info("Stopped Appointment Reminder Scheduler")
+        logger.info("Stopped Appointment Reminder & Calendar Scheduler")
 
     async def _run_loop(self) -> None:
         while self._running:
@@ -44,12 +49,14 @@ class ReminderScheduler:
                 db = SessionLocal()
                 try:
                     await reminder_service.process_due_reminders(db=db)
+                    await calendar_service.process_due_calendar_syncs(db=db)
                 finally:
                     db.close()
             except asyncio.CancelledError:
                 break
             except Exception as exc:
                 logger.error("Unexpected error in reminder scheduler loop: %s", str(exc), exc_info=True)
+                logger.error("Unexpected error in reminder/calendar scheduler loop: %s", str(exc), exc_info=True)
 
             try:
                 await asyncio.sleep(self.interval_seconds)

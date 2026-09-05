@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.appointment import Appointment
     from app.models.knowledge import KnowledgeDocument
     from app.models.whatsapp import WhatsAppAccount
+    from app.models.calendar import CalendarConnection
 
 
 class Clinic(Base, TimestampMixin):
@@ -66,4 +67,10 @@ class Clinic(Base, TimestampMixin):
         back_populates="clinic",
         cascade="all, delete-orphan",
     )
+    calendar_connections: Mapped[List["CalendarConnection"]] = relationship(
+        "CalendarConnection",
+        back_populates="clinic",
+        cascade="all, delete-orphan",
+    )
+
 

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.conversation import Conversation
     from app.models.user import User
     from app.models.appointment_reminder import AppointmentReminder
+    from app.models.calendar import CalendarConnection
 
 
 class Appointment(Base, TimestampMixin):
@@ -26,6 +27,8 @@ class Appointment(Base, TimestampMixin):
         Index("ix_appointments_clinic_scheduled", "clinic_id", "scheduled_at"),
         Index("ix_appointments_clinic_status", "clinic_id", "status"),
         Index("ix_appointments_clinic_lead", "clinic_id", "lead_id"),
+        Index("ix_appointments_external_event_id", "external_event_id"),
+        Index("ix_appointments_calendar_sync_status", "calendar_sync_status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -104,13 +107,51 @@ class Appointment(Base, TimestampMixin):
         comment="Timestamp when appointment was cancelled",
     )
 
+    # Calendar Integration (CHUNK 12)
+    external_event_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="External calendar provider event identifier (Google / Microsoft)",
+    )
+    calendar_connection_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("calendar_connections.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        comment="Linked external calendar connection",
+    )
+    calendar_sync_status: Mapped[str] = mapped_column(
+        String(50),
+        default="pending",
+        nullable=False,
+        comment="Calendar sync status: pending, synced, failed, disconnected, skipped",
+    )
+    calendar_last_synced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Timestamp when appointment was last synced with external calendar",
+    )
+    calendar_sync_error: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Sanitized error description if last calendar sync failed",
+    )
+    calendar_retry_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="Number of consecutive synchronization retries",
+    )
+
     # Relationships
     clinic: Mapped["Clinic"] = relationship("Clinic", back_populates="appointments")
     lead: Mapped[Optional["Lead"]] = relationship("Lead", back_populates="appointments")
     conversation: Mapped[Optional["Conversation"]] = relationship("Conversation", back_populates="appointments")
     created_by: Mapped[Optional["User"]] = relationship("User")
+    calendar_connection: Mapped[Optional["CalendarConnection"]] = relationship("CalendarConnection")
     reminders: Mapped[List["AppointmentReminder"]] = relationship(
         "AppointmentReminder",
         back_populates="appointment",
         cascade="all, delete-orphan",
     )
+

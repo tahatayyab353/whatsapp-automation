@@ -1,9 +1,7 @@
 # AI Receptionist — WhatsApp AI Receptionist for Clinics
 
-> **Current Project Status: CHUNK 10 (Clinic Staff Dashboard Expansion Completed)**  
-> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, outbound WhatsApp AI reply dispatching via Meta Graph API, automated structured Lead Extraction & Qualification, Human Handoff Escalation, Appointment Booking System, and Clinic Staff Single-Pane Operations Dashboard.
-> **Current Project Status: CHUNK 11 (Notifications & Appointment Reminders Completed)**  
-> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, outbound WhatsApp AI reply dispatching via Meta Graph API, automated structured Lead Extraction & Qualification, Human Handoff Escalation, Appointment Booking System, Clinic Staff Dashboard, and Automated WhatsApp Appointment Notifications & Reminders (24h & 2h).
+> **Current Project Status: CHUNK 12 (Calendar Integration & Appointment Synchronization Completed)**  
+> This repository contains the complete foundation, API core, multi-tenant database models, JWT authentication, business REST APIs, resilient AI Receptionist Engine (Gemini Primary + Groq Fallback), per-clinic WhatsApp Account Management, Meta Webhook verification & HMAC security, customer message ingestion, outbound WhatsApp AI reply dispatching via Meta Graph API, automated structured Lead Extraction & Qualification, Human Handoff Escalation, Appointment Booking System, Clinic Staff Dashboard, Automated WhatsApp Reminders (24h & 2h), and Google Calendar / Microsoft Outlook Synchronization with AES-256 encrypted credential management.
 
 ---
 
@@ -20,11 +18,12 @@ The product enables clinics to automate patient communication through WhatsApp, 
 * Staff reply transmission to WhatsApp with audit logs
 * Appointment intake, confirmation, rescheduling, and status tracking
 * Automated WhatsApp appointment reminder dispatch (24 hours & 2 hours before scheduled time)
-* Clinic staff dashboard and appointment management interface
+* External Calendar Synchronization (Google Calendar & Microsoft Outlook / Office 365)
+* Clinic staff dashboard, calendar settings, and appointment management interface
 
 ---
 
-## 2. Complete WhatsApp AI & Appointment Pipeline
+## 2. Complete WhatsApp AI, Appointment & Calendar Pipeline
 
 ```text
                          CUSTOMER
@@ -71,13 +70,22 @@ The product enables clinics to automate patient communication through WhatsApp, 
                │                              CONFIRM
                │                                 │
                │                                 ▼
-               │                         AUTOMATED REMINDERS
-               │                         (24h & 2h via WhatsApp)
+               │                    ┌───────────────────────────┐
+               │                    │ • SCHEDULE 24H/2H REMINDER│
+               │                    │ • QUEUE CALENDAR SYNC     │
+               │                    └────────────┬──────────────┘
+               │                                 │
+               │                                 ▼
+               │                    EXTERNAL CALENDAR SYNC
+               │                    (Google Calendar / Outlook)
+               │                                 │
+               │                                 ▼
+               │                    AUTOMATED WHATSAPP REMINDERS
+               │                    (24h & 2h before visit)
                │                                 │
                └──────────────────────┬──────────┘
                                       ▼
-                              PATIENT VISIT
-                               PATIENT VISIT
+                                PATIENT VISIT
                                       │
                                       ▼
                                   COMPLETED
@@ -89,45 +97,47 @@ The product enables clinics to automate patient communication through WhatsApp, 
 
 ### Backend
 * **Language:** Python 3.11+
-* **Framework:** FastAPI (Lifespan context manager)
-* **Framework:** FastAPI (Lifespan context manager + Background Reminder Scheduler)
+* **Framework:** FastAPI (Lifespan context manager + Background Scheduler for Reminders & Calendar Sync)
 * **AI Providers:** Google Gemini API (Primary) & Groq API (Fallback)
+* **Calendar Integrations:** Google Calendar API (`google-api-python-client`) & Microsoft Graph API
 * **Integrations:** Meta WhatsApp Cloud API (Graph API `v20.0`)
-* **Security:** Argon2id (`argon2-cffi`), PyJWT, HMAC-SHA256
+* **Security:** Argon2id (`argon2-cffi`), PyJWT, HMAC-SHA256, AES-256/Fernet token encryption (`cryptography`)
 * **Validation & Settings:** Pydantic v2 & Pydantic Settings
 * **Database ORM:** SQLAlchemy 2.0
 * **Migrations:** Alembic
 * **Driver:** psycopg2-binary
-* **Testing:** Pytest & HTTPX
+* **Testing:** Pytest & HTTPX (216 tests passing)
 * **ASGI Server:** Uvicorn
 
 ### Frontend
 * **Framework:** Next.js 14+ (App Router)
 * **Language:** TypeScript (Strict Mode)
 * **Styling:** Tailwind CSS + PostCSS
-* **Icons:** Lucide React
+* **Pages:** Dashboard, Appointments, Calendar Settings (`/settings/calendar`)
 
 ---
 
 ## 4. API Endpoints (v1)
 
-### Appointment Management (CHUNK 9)
+### Calendar Integration & Synchronization (CHUNK 12)
+* `GET /api/v1/calendar/connections` — List clinic calendar connections (Staff/Admin/Owner)
+* `GET /api/v1/calendar/{provider}/connect` — Generate OAuth authorization URL (Owner/Admin)
+* `GET /api/v1/calendar/{provider}/callback` — Handle OAuth callback and securely store encrypted credentials
+* `POST /api/v1/calendar/{provider}/disconnect` — Disconnect provider and securely delete tokens (Owner/Admin)
+* `GET /api/v1/calendar/calendars` — List available calendars under connected account (Staff/Admin/Owner)
+* `POST /api/v1/calendar/select` — Set active calendar for appointment syncing (Owner/Admin)
+* `POST /api/v1/calendar/sync` — Trigger immediate manual calendar synchronization (Staff/Admin/Owner)
+
 ### Appointment & Reminder Management (CHUNK 9 & CHUNK 11)
 * `GET /api/v1/appointments` — List appointments with pagination and filters (`status`, `lead_id`, `conversation_id`, `date`, `date_from`, `date_to`)
-* `POST /api/v1/appointments` — Create appointment (Staff/Admin/Owner)
-* `POST /api/v1/appointments` — Create appointment and auto-schedule 24h/2h reminders (Staff/Admin/Owner)
+* `POST /api/v1/appointments` — Create appointment, queue calendar sync, and auto-schedule 24h/2h reminders (Staff/Admin/Owner)
 * `GET /api/v1/appointments/{appointment_id}` — Get appointment details (Staff/Admin/Owner)
-* `PATCH /api/v1/appointments/{appointment_id}` — Update appointment details (Staff/Admin/Owner)
+* `PATCH /api/v1/appointments/{appointment_id}` — Update appointment details / reschedule reminders / sync calendar (Staff/Admin/Owner)
 * `GET /api/v1/appointments/{appointment_id}/reminders` — Get reminder delivery logs and statuses (Staff/Admin/Owner)
-* `PATCH /api/v1/appointments/{appointment_id}` — Update appointment details / reschedule reminders (Staff/Admin/Owner)
 * `POST /api/v1/appointments/{appointment_id}/confirm` — Confirm appointment (Staff/Admin/Owner)
-* `POST /api/v1/appointments/{appointment_id}/cancel` — Cancel appointment (Staff/Admin/Owner)
+* `POST /api/v1/appointments/{appointment_id}/cancel` — Cancel appointment, pending reminders, and remove calendar event (Staff/Admin/Owner)
 * `POST /api/v1/appointments/{appointment_id}/complete` — Complete appointment (Staff/Admin/Owner)
 * `POST /api/v1/appointments/{appointment_id}/no-show` — Mark appointment no-show (Staff/Admin/Owner)
-* `POST /api/v1/appointments/{appointment_id}/cancel` — Cancel appointment and cancel pending reminders (Staff/Admin/Owner)
-* `POST /api/v1/appointments/{appointment_id}/complete` — Complete appointment and cancel pending reminders (Staff/Admin/Owner)
-* `POST /api/v1/appointments/{appointment_id}/no-show` — Mark appointment no-show and cancel pending reminders (Staff/Admin/Owner)
-
 
 ### Human Handoff & Escalation (CHUNK 8)
 * `GET /api/v1/whatsapp/handoffs` — List pending/assigned handoffs for the clinic (Staff/Admin/Owner)
@@ -157,7 +167,7 @@ The product enables clinics to automate patient communication through WhatsApp, 
    pip install -r requirements.txt
    ```
 
-2. **Run Full Test Suite:**
+2. **Run Full Test Suite (216 tests):**
    ```bash
    pytest -v
    ```

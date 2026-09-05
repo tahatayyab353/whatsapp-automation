@@ -1,8 +1,10 @@
 from fastapi import APIRouter
+
 from app.api.v1.endpoints import (
     ai,
     appointments,
     auth,
+    calendar,
     clinics,
     conversations,
     dashboard,
@@ -17,6 +19,7 @@ from app.api.v1.endpoints import (
 )
 
 api_router = APIRouter()
+
 
 # Authentication & Current User
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
@@ -57,3 +60,7 @@ api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp I
 
 # Human Handoffs & Escalation
 api_router.include_router(handoffs.router, prefix="/whatsapp", tags=["Human Handoffs"])
+
+# Calendar Integration (CHUNK 12)
+api_router.include_router(calendar.router, prefix="/calendar", tags=["Calendar Integration"])
+

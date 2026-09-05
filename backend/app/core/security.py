@@ -83,3 +83,84 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         options={"require": ["sub", "iat", "exp", "jti"]},
     )
 
+
+def _get_fernet_key() -> bytes:
+    """
+    Derives a standard 32-byte URL-safe base64 key for Fernet symmetric encryption.
+    Uses CALENDAR_ENCRYPTION_KEY or falls back to JWT_SECRET_KEY.
+    """
+    import base64
+    import hashlib
+    raw_secret = settings.CALENDAR_ENCRYPTION_KEY or settings.JWT_SECRET_KEY
+    key_hash = hashlib.sha256(raw_secret.encode("utf-8")).digest()
+    return base64.urlsafe_b64encode(key_hash)
+
+
+def encrypt_token(plaintext: str) -> str:
+    """
+    Encrypts sensitive OAuth access and refresh tokens at rest using Fernet (AES-128-CBC + HMAC-SHA256).
+    """
+    if not plaintext:
+        return ""
+    from cryptography.fernet import Fernet
+    f = Fernet(_get_fernet_key())
+    return f.encrypt(plaintext.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_token(ciphertext: str) -> str:
+    """
+    Decrypts sensitive OAuth tokens from database storage.
+    """
+    if not ciphertext:
+        return ""
+    from cryptography.fernet import Fernet
+    f = Fernet(_get_fernet_key())
+    return f.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
+
+
+def generate_oauth_state(
+    clinic_id: uuid.UUID,
+    user_id: uuid.UUID,
+    provider: str,
+    expires_minutes: int = 15,
+) -> str:
+    """
+    Generates a secure, signed, single-use, expiring OAuth CSRF state parameter.
+    Tied to clinic_id, user_id, provider, and random nonce.
+    """
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=expires_minutes)
+    secret = settings.CALENDAR_OAUTH_STATE_SECRET or settings.JWT_SECRET_KEY
+
+    payload = {
+        "clinic_id": str(clinic_id),
+        "user_id": str(user_id),
+        "provider": provider,
+        "nonce": str(uuid.uuid4()),
+        "iat": int(now.timestamp()),
+        "exp": int(expire.timestamp()),
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
+
+
+def verify_oauth_state(state: str, expected_provider: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Validates and decodes an OAuth state token.
+    Raises BadRequestException on expiration, signature tampering, or provider mismatch.
+    """
+    if not state:
+        raise BadRequestException("Missing OAuth state parameter.")
+    secret = settings.CALENDAR_OAUTH_STATE_SECRET or settings.JWT_SECRET_KEY
+    try:
+        payload = jwt.decode(state, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        raise BadRequestException("OAuth state has expired. Please initiate calendar connection again.")
+    except jwt.InvalidTokenError:
+        raise BadRequestException("Invalid OAuth state parameter.")
+
+    if expected_provider and payload.get("provider") != expected_provider:
+        raise BadRequestException(f"OAuth state provider mismatch. Expected '{expected_provider}'.")
+
+    return payload
+
+

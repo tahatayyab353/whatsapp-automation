@@ -81,6 +81,19 @@ class Settings(BaseSettings):
     WHATSAPP_VERIFY_TOKEN: Optional[str] = None
     WHATSAPP_APP_SECRET: Optional[str] = None
 
+    # Calendar Integration Configuration (CHUNK 12)
+    CALENDAR_ENCRYPTION_KEY: Optional[str] = None
+    CALENDAR_OAUTH_STATE_SECRET: Optional[str] = None
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/calendar/google/callback"
+    MICROSOFT_CLIENT_ID: Optional[str] = None
+    MICROSOFT_CLIENT_SECRET: Optional[str] = None
+    MICROSOFT_REDIRECT_URI: str = "http://localhost:8000/api/v1/calendar/microsoft/callback"
+    MICROSOFT_TENANT_ID: str = "common"
+    CALENDAR_SYNC_INTERVAL_SECONDS: float = 60.0
+    CALENDAR_MAX_RETRY_COUNT: int = 3
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -101,6 +101,10 @@ class AppointmentService:
         except Exception as exc:
             logger.error("Failed to schedule reminders for appointment %s: %s", appointment.id, str(exc))
 
+        # CHUNK 12: Queue calendar synchronization
+        appointment.calendar_sync_status = "pending"
+        db.commit()
+
         return appointment
 
     @classmethod
@@ -152,6 +156,9 @@ class AppointmentService:
             stmt = stmt.where(Appointment.scheduled_at <= date_to)
 
         total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        stmt = stmt.order_by(Appointment.scheduled_at.asc()).offset((page - 1) * page_size).limit(page_size)
+        items = list(db.scalars(stmt).all())
+        return items, total
 
         offset = (page - 1) * page_size
         items = db.scalars(
@@ -211,6 +218,10 @@ class AppointmentService:
         if payload.notes is not None:
             appointment.notes = payload.notes
 
+        # CHUNK 12: Mark pending calendar sync on update/reschedule
+        appointment.calendar_sync_status = "pending"
+        appointment.calendar_retry_count = 0
+
         db.add(appointment)
         db.commit()
         db.refresh(appointment)
@@ -241,6 +252,8 @@ class AppointmentService:
         appointment.status = "confirmed"
         if notes:
             appointment.notes = f"{appointment.notes}\n[Confirmed] {notes}" if appointment.notes else f"[Confirmed] {notes}"
+        appointment.calendar_sync_status = "pending"
+        appointment.calendar_retry_count = 0
         db.add(appointment)
         db.commit()
         db.refresh(appointment)
@@ -269,6 +282,8 @@ class AppointmentService:
         appointment.cancelled_at = utc_now()
         if reason:
             appointment.notes = f"{appointment.notes}\n[Cancelled] {reason}" if appointment.notes else f"[Cancelled] {reason}"
+        appointment.calendar_sync_status = "pending"
+        appointment.calendar_retry_count = 0
         db.add(appointment)
         db.commit()
         db.refresh(appointment)
@@ -296,6 +311,8 @@ class AppointmentService:
         appointment.status = "completed"
         if notes:
             appointment.notes = f"{appointment.notes}\n[Completed] {notes}" if appointment.notes else f"[Completed] {notes}"
+        appointment.calendar_sync_status = "pending"
+        appointment.calendar_retry_count = 0
         db.add(appointment)
         db.commit()
         db.refresh(appointment)
@@ -323,6 +340,8 @@ class AppointmentService:
         appointment.status = "no_show"
         if notes:
             appointment.notes = f"{appointment.notes}\n[No-Show] {notes}" if appointment.notes else f"[No-Show] {notes}"
+        appointment.calendar_sync_status = "pending"
+        appointment.calendar_retry_count = 0
         db.add(appointment)
         db.commit()
         db.refresh(appointment)

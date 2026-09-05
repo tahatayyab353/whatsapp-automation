@@ -328,6 +328,12 @@ export default function DashboardPage() {
               >
                 Appointments
               </Link>
+              <Link
+                href="/settings/calendar"
+                className="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+              >
+                Calendar Sync
+              </Link>
             </nav>
           </div>
 

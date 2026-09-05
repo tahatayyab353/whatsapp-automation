@@ -10,6 +10,7 @@ from app.models.knowledge import KnowledgeDocument
 from app.models.whatsapp import WhatsAppAccount
 from app.models.handoff import Handoff
 from app.models.appointment_reminder import AppointmentReminder
+from app.models.calendar import CalendarConnection
 
 __all__ = [
     "Base",
@@ -26,4 +27,6 @@ __all__ = [
     "WhatsAppAccount",
     "Handoff",
     "AppointmentReminder",
+    "CalendarConnection",
 ]
+

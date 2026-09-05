@@ -33,3 +33,18 @@ class ConflictException(AppException):
     def __init__(self, message: str = "Resource conflict", details: Optional[Any] = None) -> None:
         super().__init__(message=message, code="CONFLICT", status_code=409, details=details)
 
+
+class AuthenticationException(AppException):
+    def __init__(self, message: str = "Authentication failed", details: Optional[Any] = None) -> None:
+        super().__init__(message=message, code="AUTHENTICATION_FAILED", status_code=401, details=details)
+
+
+class UnauthorizedException(AuthenticationException):
+    pass
+
+
+class ForbiddenException(AppException):
+    def __init__(self, message: str = "Access forbidden", details: Optional[Any] = None) -> None:
+        super().__init__(message=message, code="FORBIDDEN", status_code=403, details=details)
+
+
