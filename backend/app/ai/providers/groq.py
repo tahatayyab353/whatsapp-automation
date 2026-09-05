@@ -55,6 +55,7 @@ class GroqProvider(AIProvider):
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "ai-receptionist-backend/1.0",
         }
         payload = {
             "model": self._model,

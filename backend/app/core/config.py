@@ -63,6 +63,7 @@ class Settings(BaseSettings):
 
     GROQ_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "qwen/qwen3.8-27b"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     AI_TEMPERATURE: float = 0.2
     AI_MAX_OUTPUT_TOKENS: int = 500

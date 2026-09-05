@@ -32,7 +32,6 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     phone: "+92 300 5554433",
     title: "Scaling & Polishing",
     description: "Routine checkup and teeth cleaning requested via WhatsApp",
-    scheduled_at: "2026-09-05T10:30:00Z",
     scheduled_at: "2026-09-06T10:30:00Z",
     duration_minutes: 30,
     timezone: "Asia/Karachi",
@@ -59,7 +58,6 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     phone: "+92 321 9876543",
     title: "Invisalign Consultation",
     description: "Aligner assessment and 3D scan consultation",
-    scheduled_at: "2026-09-05T14:00:00Z",
     scheduled_at: "2026-09-06T14:00:00Z",
     duration_minutes: 45,
     timezone: "Asia/Karachi",
@@ -87,7 +85,6 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     phone: "+92 333 1112233",
     title: "Dental Veneers Checkup",
     description: "Hollywood smile assessment",
-    scheduled_at: "2026-09-06T11:00:00Z",
     scheduled_at: "2026-09-07T11:00:00Z",
     duration_minutes: 30,
     timezone: "Asia/Karachi",
@@ -111,6 +108,7 @@ const SAMPLE_APPOINTMENTS: AppointmentItem[] = [
     ],
   },
 ];
+
 
 
 export default function AppointmentsPage() {

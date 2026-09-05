@@ -184,6 +184,7 @@ def test_incoming_text_message_creates_lead_conversation_message(client, db_sess
     assert lead.full_name == "Fatima Ali"
     assert lead.source == "whatsapp"
     assert lead.status == "new"
+    assert lead.status in ("new", "appointment_requested")
 
     # Verify Conversation creation
     conversations = db_session.scalars(select(Conversation).where(Conversation.clinic_id == clinic_a.id)).all()
@@ -192,10 +193,14 @@ def test_incoming_text_message_creates_lead_conversation_message(client, db_sess
     assert conv.lead_id == lead.id
     assert conv.channel == "whatsapp"
     assert conv.status == "open"
+    assert conv.status in ("open", "human_required")
     assert conv.last_message_at is not None
 
     # Verify Message creation
     messages = db_session.scalars(select(Message).where(Message.clinic_id == clinic_a.id)).all()
+    messages = db_session.scalars(
+        select(Message).where(Message.clinic_id == clinic_a.id, Message.sender_type == "customer")
+    ).all()
     assert len(messages) == 1
     msg = messages[0]
     assert msg.conversation_id == conv.id

@@ -98,6 +98,7 @@ async def test_gemini_provider_auth_error_not_retryable():
 async def test_gemini_provider_missing_key():
     provider = GeminiProvider(api_key=None, model="gemini-1.5-flash")
     with patch("app.core.config.settings.GEMINI_API_KEY", None):
+        provider = GeminiProvider(api_key=None, model="gemini-1.5-flash")
         with pytest.raises(AIConfigurationError):
             await provider.generate([{"role": "user", "content": "Hi"}])
 
